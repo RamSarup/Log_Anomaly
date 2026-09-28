@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#19251f">
+	<meta name="description" content="A live operations workspace for log events and anomaly signals.">
+	<title>Signalwatch | Live operations</title>
+	<link rel="stylesheet" href="/static/workspace.css">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="/static/app.js" defer></script>
+</head>
+<body>
+	<div class="app-shell">
+		<aside class="sidebar">
+			<a class="brand" href="/dashboard" aria-label="Signalwatch home">
+				<span class="brand-mark" aria-hidden="true">S</span>
+				<span class="brand-name">signal<span>watch</span></span>
+			</a>
+			<div class="workspace-label">WORKSPACE <span>LOCAL</span></div>
+			<nav class="primary-nav" role="tablist" aria-label="Dashboard views" aria-orientation="vertical">
+				<button class="nav-tab active" id="tab-overview" type="button" role="tab" aria-selected="true" aria-controls="view-overview" data-view="overview">
+					<span class="nav-index">01</span><span>Overview</span>
+				</button>
+				<button class="nav-tab" id="tab-events" type="button" role="tab" aria-selected="false" aria-controls="view-events" data-view="events" tabindex="-1">
+					<span class="nav-index">02</span><span>Event stream</span><span id="nav-events-count" class="nav-count">0</span>
+				</button>
+				<button class="nav-tab" id="tab-alerts" type="button" role="tab" aria-selected="false" aria-controls="view-alerts" data-view="alerts" tabindex="-1">
+					<span class="nav-index">03</span><span>Anomalies</span><span id="nav-alert-count" class="nav-count">0</span>
+				</button>
+			</nav>
+			<div class="sidebar-bottom">
+				<span class="sidebar-caption">STREAM STATUS</span>
+				<div id="connection-status" class="connection-status disconnected" role="status">
+					<span class="status-dot"></span><span id="connection-label">Connecting</span>
+				</div>
+				<p>Real pipeline<br>Detector active</p>
+			</div>
+		</aside>
+
+		<main class="dashboard">
+			<header class="topbar">
+				<div><p class="eyebrow">OBSERVABILITY <span>/</span> LIVE STREAM</p><h1>Operations room</h1></div>
+			<div class="topbar-meta"><span class="environment-dot"></span><span>LOCAL ENVIRONMENT</span><span id="clock" class="clock"></span></div>
+			</header>
+
+			<section class="view-panel active" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+				<div class="page-heading">
+					<div><p class="section-kicker">RIGHT NOW</p><h2>Signal overview</h2><p class="subtitle">A live read on service health, one event at a time.</p></div>
+					<div class="live-indicator"><span class="pulse-dot"></span> LIVE MONITORING</div>
+				</div>
+				<section class="summary-grid" aria-label="Event summary">
+					<article class="summary-card summary-primary"><div class="summary-label">Events received <span class="metric-mark">01</span></div><div id="total-events" class="summary-value">0</div><div class="summary-foot">Since this view opened</div></article>
+					<article class="summary-card"><div class="summary-label">Error events <span class="metric-mark metric-red">02</span></div><div id="total-errors" class="summary-value">0</div><div class="summary-foot">Level marked ERROR</div></article>
+					<article class="summary-card"><div class="summary-label">Anomaly signals <span class="metric-mark metric-orange">03</span></div><div id="active-anomalies" class="summary-value">0</div><div class="summary-foot">Received this session</div></article>
+					<article class="summary-card"><div class="summary-label">Current error rate <span class="metric-mark metric-green">04</span></div><div id="current-error-rate" class="summary-value">—<span class="value-unit">%</span></div><div id="rate-caption" class="summary-foot">Waiting for first event</div></article>
+				</section>
+				<div class="overview-grid">
+					<article class="panel chart-panel">
+						<div class="panel-heading"><div><p class="section-kicker">TREND / 30 EVENTS</p><h3>Error rate</h3><p>Observed rate against the configured baseline</p></div><span class="chart-range">LIVE</span></div>
+						<div class="chart-legend"><span><i class="legend-line rate-line"></i>Error rate</span><span><i class="legend-line baseline-line"></i>Baseline</span></div>
+						<div class="chart-wrap"><canvas id="error-rate-chart" aria-label="Live error rate chart"></canvas></div>
+					</article>
+					<aside class="signal-note"><span class="signal-note-index">FIELD NOTE / 01</span><div class="signal-note-rule"></div><h3>Read the<br>deviation.</h3><p>Each point compares the observed error rate with the mock service baseline. Anomaly signals are listed separately as they arrive.</p><button class="text-link" type="button" data-open-view="alerts">Review anomalies <span aria-hidden="true">→</span></button></aside>
+				</div>
+			</section>
+
+			<section class="view-panel" id="view-events" role="tabpanel" aria-labelledby="tab-events" tabindex="0" hidden>
+				<div class="page-heading"><div><p class="section-kicker">LIVE / INGESTION</p><h2>Event stream</h2><p class="subtitle">Newest service events arrive at the top of the stream.</p></div><span class="stream-tag"><span class="stream-dot"></span> STREAMING</span></div>
+				<section class="panel events-panel">
+					<div class="panel-heading events-heading"><div><h3>All events</h3><p id="visible-events">Showing 0 events</p></div>
+						<div class="event-controls"><label class="search-control"><span class="sr-only">Search events</span><span aria-hidden="true">⌕</span><input id="event-search" type="search" placeholder="Search events" autocomplete="off"></label><label class="sr-only" for="level-filter">Filter by level</label><select id="level-filter"><option value="all">All levels</option><option value="INFO">Info</option><option value="WARNING">Warning</option><option value="ERROR">Error</option></select></div>
+					</div>
+					<div class="table-wrap"><table><thead><tr><th scope="col">Timestamp</th><th scope="col">Level</th><th scope="col">Service</th><th scope="col">Message</th><th scope="col">Error rate</th><th scope="col">Baseline</th><th scope="col">Deviation</th><th scope="col">Severity</th></tr></thead><tbody id="events-body"><tr id="events-empty"><td colspan="8" class="table-empty">Waiting for events from the server…</td></tr><tr id="events-filter-empty" hidden><td colspan="8" class="table-empty">No events match these filters.</td></tr></tbody></table></div>
+					<div class="table-footer"><span>Most recent 100 events</span><span>Updates automatically</span></div>
+				</section>
+			</section>
+
+			<section class="view-panel" id="view-alerts" role="tabpanel" aria-labelledby="tab-alerts" tabindex="0" hidden>
+				<div class="page-heading"><div><p class="section-kicker">LIVE / SIGNAL REVIEW</p><h2>Anomaly signals</h2><p class="subtitle">Events flagged as anomalous by the mock stream.</p></div><span id="alert-count" class="count-badge">0 signals</span></div>
+				<section class="panel alerts-panel"><div class="panel-heading"><div><h3>Recent signals</h3><p>Newest signals appear first</p></div><span class="alert-marker" aria-hidden="true">!</span></div>
+					<div id="alerts-list" class="alerts-list" aria-live="polite"><div id="alerts-empty" class="empty-state"><span class="empty-icon" aria-hidden="true">—</span><strong>No signals yet</strong><span>Anomaly signals will appear here as the stream updates.</span></div></div>
+				</section>
+			</section>
+			<footer class="footer"><span>SIGNALWATCH <span class="footer-separator">/</span> LIVE OPERATIONS</span><span>Real-time anomaly detection</span></footer>
+		</main>
+	</div>
+</body>
+</html>
